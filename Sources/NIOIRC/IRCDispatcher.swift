@@ -64,7 +64,8 @@ public protocol IRCDispatcher {
                     message    : String) throws
   func doMessage   (sender     : IRCUserID?,
                     recipients : [ IRCMessageRecipient ],
-                    message    : String) throws
+                    message    : String,
+                    metadata   : String?) throws
 
   func doIsOnline  (_ nicks    : [ IRCNickName ]) throws
   func doList      (_ channels : [ IRCChannelName ]?,
@@ -103,7 +104,9 @@ public extension IRCDispatcher {
           let sender = message.origin != nil
                      ? IRCUserID(message.origin!) : nil
           try doMessage(sender: sender,
-                        recipients: recipients, message: payload)
+                        recipients: recipients,
+                        message: payload,
+                        metadata: message.metadata)
         case .NOTICE(let recipients, let message):
           try doNotice(recipients: recipients, message: message)
         
@@ -205,8 +208,11 @@ public extension IRCDispatcher {
   func doNotice(recipients: [ IRCMessageRecipient ], message: String) throws {
     throw InternalDispatchError.notImplemented(function: #function)
   }
-  func doMessage(sender: IRCUserID?, recipients: [ IRCMessageRecipient ],
-                 message: String) throws
+
+  func doMessage(sender: IRCUserID?,
+                 recipients: [ IRCMessageRecipient ],
+                 message: String,
+                 metadata: String) throws
   {
     throw InternalDispatchError.notImplemented(function: #function)
   }
@@ -214,6 +220,7 @@ public extension IRCDispatcher {
   func doIsOnline(_ nicks: [ IRCNickName ]) throws {
     throw InternalDispatchError.notImplemented(function: #function)
   }
+    
   func doList(_ channels : [ IRCChannelName ]?, _ target: String?) throws {
     throw InternalDispatchError.notImplemented(function: #function)
   }

@@ -52,7 +52,7 @@ public extension IRCMessageTarget {
                     .map { $0.replacingOccurrences(of: "\r", with: "") }
     
     let messages = lines.map {
-      IRCMessage(origin: origin, command: .PRIVMSG(recipients, $0))
+      IRCMessage(metadata: nil, origin: origin, command: .PRIVMSG(recipients, $0))
     }
     sendMessages(messages, promise: nil)
   }
@@ -65,14 +65,14 @@ public extension IRCMessageTarget {
                     .map { $0.replacingOccurrences(of: "\r", with: "") }
 
     let messages = lines.map {
-      IRCMessage(origin: origin, command: .NOTICE(recipients, $0))
+      IRCMessage(metadata: nil, origin: origin, command: .NOTICE(recipients, $0))
     }
     sendMessages(messages, promise: nil)
   }
   
   @inlinable
   func sendRawReply(_ code: IRCCommandCode, _ args: String...) {
-    sendMessage(IRCMessage(origin: origin, command: .numeric(code, args)))
+      sendMessage(IRCMessage(metadata: nil, origin: origin, command: .numeric(code, args)))
   }
 }
 
