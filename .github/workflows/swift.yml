@@ -14,10 +14,8 @@ jobs:
       matrix:
         image:
           - swift:5.0.3-xenial
-          - swift:5.1.5-xenial
-          - swift:5.2.5-xenial
-          - swift:5.3.2-xenial
           - swift:5.3.2-bionic
+          - swift:5.10.1-noble
     container: ${{ matrix.image }}
     steps:
       - name: Checkout Repository
