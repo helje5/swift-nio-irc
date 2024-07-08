@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - swift:5.5.0-bionic
+          - swift:5.5.0-focal
           - swift:5.10.1-noble
     container: ${{ matrix.image }}
     steps:
