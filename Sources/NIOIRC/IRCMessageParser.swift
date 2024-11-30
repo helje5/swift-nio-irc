@@ -105,6 +105,7 @@ public struct IRCMessageParser {
     //   [':' SOURCE]? ' ' COMMAND [' ' ARGS]? [' :' LAST-ARG]?
     let cSpace : UInt8 = 32
     let cColon : UInt8 = 58
+    let cAt    : UInt8 = 64
     let c0     : UInt8 = 48 + 0
     let c9     : UInt8 = 48 + 9
     guard !line.isEmpty else { throw Error.syntaxError }
@@ -135,13 +136,37 @@ public struct IRCMessageParser {
       return String(data: Data(slice), encoding: .utf8) // Sigh, the pain.
     }
 
+    /* parse metadata */
+
+      let metadataSource : Swift.Slice<UnsafeRawBufferPointer>?
+
+      if cursor[cursor.startIndex] == cAt {
+        let startIndex = cursor.startIndex.advanced(by: 1)
+        let spaceIdx   = line.firstIndex(of: cSpace)
+
+        guard let endSourceIdx = spaceIdx, endSourceIdx > startIndex else {
+          throw Error.invalidPrefix(Data(line))
+        }
+
+        metadataSource = cursor[startIndex..<endSourceIdx]
+        assert(!cursor.isEmpty)
+
+        cursor = cursor[endSourceIdx..<cursor.endIndex]
+        skipSpaces()
+      }
+      else {
+          metadataSource = nil
+      }
+
     /* parse source */
-    
+
     let source : Swift.Slice<UnsafeRawBufferPointer>?
-    
+
     if cursor[cursor.startIndex] == cColon {
+//        let spaceIdx   = cursor.firstIndex(of: cSpace)
       let startIndex = cursor.startIndex.advanced(by: 1)
-      let spaceIdx   = line.firstIndex(of: cSpace)
+//      let spaceIdx   = line.firstIndex(of: cSpace)
+      let spaceIdx   = cursor.firstIndex(of: cSpace)
 
       guard let endSourceIdx = spaceIdx, endSourceIdx > startIndex else {
         throw Error.invalidPrefix(Data(line))
@@ -159,7 +184,9 @@ public struct IRCMessageParser {
     
     /* parse command name */
     
-    guard !cursor.isEmpty else { throw Error.invalidCommand(Data(line)) }
+    guard !cursor.isEmpty else {
+        throw Error.invalidCommand(Data(line))
+    }
     guard isLetter(cursor[cursor.startIndex])
        || isDigit(cursor[cursor.startIndex]) else {
       throw Error.invalidCommand(Data(line))
@@ -239,6 +266,16 @@ public struct IRCMessageParser {
     
     /* construct */
 
+    let metadataString: String?
+    if let metadataSource = metadataSource {
+        guard let string = makeString(from: metadataSource) else {
+          throw Error.invalidPrefix(Data(line))
+        }
+        metadataString = string
+    } else {
+        metadataString = nil
+    }
+
     let origin: String?
     if let source = source {
       guard let sourceString = makeString(from: source) else {
@@ -252,10 +289,12 @@ public struct IRCMessageParser {
     
     switch commandKey {
       case .string(let s):
-        return IRCMessage(origin: origin,
+            return IRCMessage(metadata: metadataString,
+                              origin: origin,
                           command: try IRCCommand(s, arguments: args))
       case .int(let i):
-        return IRCMessage(origin: origin,
+        return IRCMessage(metadata: metadataString,
+                          origin: origin,
                           command: try IRCCommand(i, arguments: args))
     }
   }

@@ -23,15 +23,21 @@ import struct Foundation.Data
 public struct IRCMessage : Codable, CustomStringConvertible {
 
   public enum CodingKeys: String, CodingKey {
-    case origin, target, command, arguments
+    case metadata, origin, target, command, arguments
   }
 
   @inlinable
-  public init(origin: String? = nil, target: String? = nil,
+  public init(metadata: String? = nil, origin: String? = nil, target: String? = nil,
               command: IRCCommand)
   {
-    self._storage = _Storage(origin: origin, target: target, command: command)
+      self._storage = _Storage(metadata: metadata, origin: origin, target: target, command: command)
   }
+
+    @inlinable
+    public var metadata : String? {
+      set { copyStorageIfNeeded(); _storage.metadata = newValue }
+      get { return _storage.metadata }
+    }
 
   /**
    * True origin of message. Do not set in clients.
@@ -67,6 +73,7 @@ public struct IRCMessage : Codable, CustomStringConvertible {
   @inlinable
   public var description: String {
     var ms = "<IRCMsg:"
+    if let metadata = metadata { ms += " from=\(origin)" }
     if let origin = origin { ms += " from=\(origin)" }
     if let target = target { ms += " to=\(target)" }
     ms += " "
@@ -87,18 +94,21 @@ public struct IRCMessage : Codable, CustomStringConvertible {
 
   @usableFromInline
   class _Storage {
+    @usableFromInline var metadata  : String?
     @usableFromInline var origin  : String?
     @usableFromInline var target  : String?
     @usableFromInline var command : IRCCommand
 
     @usableFromInline
-    init(origin: String?, target: String?, command: IRCCommand) {
+    init(metadata: String?, origin: String?, target: String?, command: IRCCommand) {
+      self.metadata = metadata
       self.origin  = origin
       self.target  = target
       self.command = command
     }
     @usableFromInline
     init(_ other: _Storage) {
+      self.metadata = other.metadata
       self.origin  = other.origin
       self.target  = other.target
       self.command = other.command
@@ -116,13 +126,15 @@ public struct IRCMessage : Codable, CustomStringConvertible {
     let args    = try c.decodeIfPresent([ String ].self, forKey: .arguments)
     let command = try IRCCommand(cmd, arguments: args ?? [])
     
-    self.init(origin: try c.decodeIfPresent(String.self, forKey: .origin),
+    self.init(metadata: try c.decodeIfPresent(String.self, forKey: .metadata),
+              origin: try c.decodeIfPresent(String.self, forKey: .origin),
               target: try c.decodeIfPresent(String.self, forKey: .target),
               command: command)
   }
   @inlinable
   public func encode(to encoder: Encoder) throws {
     var c = encoder.container(keyedBy: CodingKeys.self)
+    try c.encodeIfPresent(metadata,       forKey: .metadata)
     try c.encodeIfPresent(origin,         forKey: .origin)
     try c.encodeIfPresent(target,         forKey: .target)
     try c.encode(command.commandAsString, forKey: .command)
